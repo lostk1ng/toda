@@ -3,7 +3,7 @@ use std::sync::{mpsc, Arc, Mutex};
 use jsonrpc_derive::rpc;
 use jsonrpc_stdio_server::jsonrpc_core::*;
 use jsonrpc_stdio_server::ServerBuilder;
-use tracing::{info, trace};
+use tracing::{info, trace, warn};
 
 use crate::hookfs::HookFs;
 use crate::injector::{InjectorConfig, MultiInjector};
@@ -70,8 +70,12 @@ impl Rpc for RpcImpl {
             Ok(_) => Ok("ok".to_string()),
             Err(e) => {
                 let tx = &self.tx.lock().unwrap();
-                tx.send(Comm::Shutdown)
-                    .expect("Send through channel failed");
+                if let Err(err) = tx.send(Comm::Shutdown) {
+                    warn!(
+                        "failed to send shutdown signal, receiver may be dropped: {:?}",
+                        err
+                    );
+                }
                 Ok(e.to_string())
             }
         }

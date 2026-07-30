@@ -176,7 +176,10 @@ fn main() -> Result<()> {
 
     let status = match &mount_injector {
         Ok(_) => Ok(()),
-        Err(e) => Err(anyhow::Error::msg(e.to_string())),
+        Err(e) => {
+            tracing::error!("inject failed, toda will report error via rpc: {:?}", e);
+            Err(anyhow::Error::msg(e.to_string()))
+        }
     };
 
     let (tx, _) = mpsc::channel();
